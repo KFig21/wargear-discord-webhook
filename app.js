@@ -32,7 +32,6 @@ const checkTurn = async() => {
             await sendDiscordMessage(message);
             lastTurnPlayer = currentTurnPlayer;
             notifiedTimeLimits.clear(); // Reset the notified time limits for the new player
-            console.log(`Notification sent: It's ${currentTurnPlayer}'s turn in game ${gameData.name}!`);
         }
 
         // Check for time remaining notifications
@@ -72,5 +71,5 @@ async function sendDiscordMessage(message) {
 }
 
 // Poll the Wargear API every minute to check for turn changes and time notifications
-setInterval(checkTurn, 600000); // Check every 10 minutes
-checkTurn(); // Initial check on startup
+setInterval(checkTurn, 3600000); // Check every 1 hr
+// checkTurn(); // Initial check on startup
