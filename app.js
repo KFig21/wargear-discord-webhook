@@ -1,10 +1,23 @@
 const axios = require('axios');
 require('dotenv').config();
+const redis = require('redis');
+
+// Redis setup
+const redisUrl = process.env.REDIS_URL;
+const redisClient = redis.createClient({
+    url: redisUrl,
+    tls: {
+        rejectUnauthorized: false
+    }
+});
+
+redisClient.on('error', (err) => console.error('Redis client error:', err));
+
+// Connect to Redis
+redisClient.connect();
+
 const discordWebhookURL = process.env.DISCORD_URL;
 const warGearApiKey = process.env.WAR_GEAR_API_KEY;
-
-// Track the last player who had the turn to avoid duplicate notifications
-let lastTurnPlayer = null;
 
 // Track which time notifications have been sent
 const notifiedTimeLimits = new Set();
@@ -13,7 +26,7 @@ const notifiedTimeLimits = new Set();
 let players = JSON.parse(process.env.PLAYERS);
 
 // Function to check the game's status and send turn notifications
-const checkTurn = async() => {
+const checkTurn = async () => {
     try {
         // Get the game data from the Wargear API
         const response = await axios.get(`https://www.wargear.net/rest/GetGameList/my?api_key=${warGearApiKey}`, {
@@ -24,13 +37,19 @@ const checkTurn = async() => {
         const gameData = response.data[0];
         const currentTurnPlayer = gameData.current_turn[0];
 
+        // Get lastTurnPlayer from Redis
+        const lastTurnPlayer = await redisClient.get('lastTurnPlayer');
+
         // If the current player is different from the last notified player, send a message and reset notified limits
         if (currentTurnPlayer !== lastTurnPlayer) {
             const gameLink = `https://www.wargear.net/games/view/${gameData.gameid}`;
             const discordHandle = players[currentTurnPlayer] ? `<@${players[currentTurnPlayer]}>` : currentTurnPlayer;
             const message = `It's ${discordHandle}'s turn in game [${gameData.name}](${gameLink})!`;
             await sendDiscordMessage(message);
-            lastTurnPlayer = currentTurnPlayer;
+
+            // Update lastTurnPlayer in Redis
+            await redisClient.set('lastTurnPlayer', currentTurnPlayer);
+
             notifiedTimeLimits.clear(); // Reset the notified time limits for the new player
         }
 
@@ -39,10 +58,10 @@ const checkTurn = async() => {
     } catch (error) {
         console.error('Error checking game status:', error);
     }
-}
+};
 
 // Function to notify players of time remaining
-const notifyTimeRemaining = async(gameData) => {
+const notifyTimeRemaining = async (gameData) => {
     const timeRemainingHours = Math.floor(gameData.time_remaining / 3600);
     const gameLink = `https://www.wargear.net/games/view/${gameData.gameid}`;
 
@@ -57,7 +76,7 @@ const notifyTimeRemaining = async(gameData) => {
         await sendDiscordMessage(`Warning: Only 1 hour left in game [${gameData.name}](${gameLink})!`);
         notifiedTimeLimits.add(1);
     }
-}
+};
 
 // Function to send a message to Discord
 async function sendDiscordMessage(message) {
@@ -70,6 +89,6 @@ async function sendDiscordMessage(message) {
     }
 }
 
-// Poll the Wargear API every minute to check for turn changes and time notifications
+// Poll the Wargear API every 15 minutes to check for turn changes and time notifications
 setInterval(checkTurn, 900000); // Check every 15 minutes
 checkTurn(); // Initial check on startup

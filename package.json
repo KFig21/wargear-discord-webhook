@@ -19,6 +19,7 @@
   "homepage": "https://github.com/KFig21/wargear-discord-webhook#readme",
   "dependencies": {
     "axios": "^1.7.7",
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "redis": "^4.7.0"
   }
 }
