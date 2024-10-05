@@ -2,12 +2,13 @@ const axios = require('axios');
 require('dotenv').config();
 const redis = require('redis');
 
-// Redis setup
+// Redis setup with proper SSL config
 const redisUrl = process.env.REDIS_URL;
 const redisClient = redis.createClient({
     url: redisUrl,
-    tls: {
-        rejectUnauthorized: false
+    socket: {
+        tls: true,
+        rejectUnauthorized: false // Bypass SSL certificate verification
     }
 });
 
@@ -15,6 +16,7 @@ redisClient.on('error', (err) => console.error('Redis client error:', err));
 
 // Connect to Redis
 redisClient.connect();
+
 
 const discordWebhookURL = process.env.DISCORD_URL;
 const warGearApiKey = process.env.WAR_GEAR_API_KEY;
@@ -39,6 +41,8 @@ const checkTurn = async () => {
 
         // Get lastTurnPlayer from Redis
         const lastTurnPlayer = await redisClient.get('lastTurnPlayer');
+        console.log('lastTurnPlayer', lastTurnPlayer)
+        console.log('currentTurnPlayer', currentTurnPlayer)
 
         // If the current player is different from the last notified player, send a message and reset notified limits
         if (currentTurnPlayer !== lastTurnPlayer) {
