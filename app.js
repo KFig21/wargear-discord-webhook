@@ -41,8 +41,6 @@ const checkTurn = async () => {
 
         // Get lastTurnPlayer from Redis
         const lastTurnPlayer = await redisClient.get('lastTurnPlayer');
-        console.log('lastTurnPlayer', lastTurnPlayer)
-        console.log('currentTurnPlayer', currentTurnPlayer)
 
         // If the current player is different from the last notified player, send a message and reset notified limits
         if (currentTurnPlayer !== lastTurnPlayer) {
