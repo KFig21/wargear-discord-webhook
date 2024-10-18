@@ -70,6 +70,6 @@ async function sendDiscordMessage(message) {
     }
 }
 
-// Poll the Wargear API every minute to check for turn changes and time notifications
+// Call the Wargear API every minute to check for turn changes and time notifications
 setInterval(checkTurn, 900000); // Check every 15 minutes
 checkTurn(); // Initial check on startup
